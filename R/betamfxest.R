@@ -1,6 +1,7 @@
-negbinmfxest <-
-function(formula, data, atmean=TRUE, robust=FALSE, clustervar1=NULL, 
-                        clustervar2=NULL, start = NULL, control = glm.control()){
+betamfxest <-
+function(formula, data, atmean = TRUE, robust = FALSE, clustervar1 = NULL, 
+                      clustervar2 = NULL, control = betareg.control(), 
+                      link.phi = NULL, type = "ML"){
   
   if(is.null(formula)){
     stop("formula is missing")
@@ -34,7 +35,8 @@ function(formula, data, atmean=TRUE, robust=FALSE, clustervar1=NULL,
       data=na.omit(data)
     }
   }
-  fit = glm.nb(formula, data=data, x=T, start = start, control = control)
+  fit = betareg(formula, data=data, x=T, control = control, 
+                link = "logit", link.phi = link.phi, type = type)    
   
   # terms needed
   x1 = model.matrix(fit)
@@ -42,44 +44,46 @@ function(formula, data, atmean=TRUE, robust=FALSE, clustervar1=NULL,
     x1 <- x1[, !alias, drop = FALSE]
   }
   xm = as.matrix(colMeans(x1))
-  be = as.matrix(na.omit(coef(fit)))
-  k1 = length(na.omit(coef(fit)))
+  be = as.matrix(na.omit(coef(fit)))[1:NROW(xm)]
+  k1 = NROW(xm)
   xb = t(xm) %*% be
-  fxb = ifelse(atmean==TRUE, exp(xb), mean(exp(x1 %*% be)))  
+  fxb = ifelse(atmean==TRUE, plogis(xb)*(1-plogis(xb)), mean(plogis(x1 %*% be)*(1-plogis(x1 %*% be))))  
   # get variances
-  vcv = vcov(fit)
+  vcv = vcov(fit)[1:NROW(xm),1:NROW(xm)]
   
   if(robust){
     if(is.null(clustervar1)){
       # white correction
-      vcv = vcovHC(fit, type = "HC0")
+      vcv = sandwich(fit, bread. = bread(fit), meat. = meatHCbeta(fit,"HC0"))[1:NROW(xm),1:NROW(xm)] 
     } else {
       if(is.null(clustervar2)){
-        vcv = clusterVCV(data=data, fm=fit, cluster1=clustervar1,cluster2=NULL)
+        vcv = clusterVCV(data=data, fm=fit, cluster1=clustervar1,cluster2=NULL)[1:NROW(xm),1:NROW(xm)]
       } else {
-        vcv = clusterVCV(data=data, fm=fit, cluster1=clustervar1,cluster2=clustervar2)
+        vcv = clusterVCV(data=data, fm=fit, cluster1=clustervar1,cluster2=clustervar2)[1:NROW(xm),1:NROW(xm)]
       }
     }
   }
   
   if(robust==FALSE & is.null(clustervar1)==FALSE){
     if(is.null(clustervar2)){
-      vcv = clusterVCV(data=data, fm=fit, cluster1=clustervar1,cluster2=NULL)
+      vcv = clusterVCV(data=data, fm=fit, cluster1=clustervar1,cluster2=NULL)[1:NROW(xm),1:NROW(xm)]
     } else {
-      vcv = clusterVCV(data=data, fm=fit, cluster1=clustervar1,cluster2=clustervar2)
+      vcv = clusterVCV(data=data, fm=fit, cluster1=clustervar1,cluster2=clustervar2)[1:NROW(xm),1:NROW(xm)]
     }
   }
   
   mfx = data.frame(mfx=fxb*be, se=NA)
+  row.names(mfx) = colnames(x1)
   
   # get standard errors
   if(atmean){
-    gr = as.numeric(fxb)*(diag(k1) + (be %*% t(xm)))
+    gr = (as.numeric(fxb))*(diag(k1) + as.numeric(1 - 2*plogis(xb))*(be %*% t(xm)))
     mfx$se = sqrt(diag(gr %*% vcv %*% t(gr)))            
   } else {
     gr = apply(x1, 1, function(x){
-      as.numeric(as.numeric(exp(x %*% be))*(diag(k1) - (be %*% t(x))))
-    })      
+      as.numeric(as.numeric(plogis(x %*% be)*(1-plogis(x %*% be)))*
+                   (diag(k1) - (1 - 2*as.numeric(plogis(x %*% be)))*(be %*% t(x))))
+    })  
     gr = matrix(apply(gr,1,mean),nrow=k1)
     mfx$se = sqrt(diag(gr %*% vcv %*% t(gr)))                
   }
@@ -100,17 +104,18 @@ function(formula, data, atmean=TRUE, robust=FALSE, clustervar1=NULL,
         disx0 = disx1 = xm
         disx1[disch[i],] = max(x1[,disch[i]])
         disx0[disch[i],] = min(x1[,disch[i]])
-        mfx[disch[i],1] = exp(t(be) %*% disx1) - exp(t(be) %*% disx0)
+        mfx[disch[i],1] = plogis(t(be) %*% disx1) - plogis(t(be) %*% disx0)
         # standard errors
-        gr = exp(t(be) %*% disx1) %*% t(disx1) - exp(t(be) %*% disx0) %*% t(disx0)
-        mfx[disch[i],2] = sqrt(gr %*% vcv %*% t(gr))  
+        gr = dlogis(t(be) %*% disx1) %*% t(disx1) - dlogis(t(be) %*% disx0) %*% t(disx0)
+        mfx[disch[i],2] = sqrt(gr %*% vcv %*% t(gr))
+        
       } else {
         disx0 = disx1 = x1
         disx1[,disch[i]] = max(x1[,disch[i]])
         disx0[,disch[i]] = min(x1[,disch[i]])  
-        mfx[disch[i],1] = mean(exp(disx1 %*% be) - exp(disx0 %*% be))
+        mfx[disch[i],1] = mean(plogis(disx1 %*% be) - plogis(disx0 %*% be))
         # standard errors
-        gr = as.numeric(exp(disx1 %*% be)) * disx1 - as.numeric(exp(disx0 %*% be)) * disx0
+        gr = as.numeric(dlogis(disx1 %*% be)) * disx1 - as.numeric(dlogis(disx0 %*% be)) * disx0
         avegr = as.matrix(colMeans(gr))
         mfx[disch[i],2] = sqrt(t(avegr) %*% vcv %*% avegr)
       }

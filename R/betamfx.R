@@ -1,7 +1,11 @@
-logitmfx <-
+betamfx <-
 function(formula, data, atmean = TRUE, robust = FALSE, clustervar1 = NULL, 
-                    clustervar2 = NULL, start = NULL, control = list()){
-  res = logitmfxest(formula, data, atmean, robust, clustervar1, clustervar2, start, control)
+                   clustervar2 = NULL, control = betareg.control(), 
+                   link.phi = NULL, type = "ML"){
+  
+  res = betamfxest(formula = formula, data = data, atmean, robust, 
+                   clustervar1 = clustervar1, clustervar2 = clustervar2,
+                   control = control, link.phi = link.phi, type = type)
   
   est = NULL
   est$mfxest = cbind(dFdx = res$mfx$mfx,
@@ -14,6 +18,6 @@ function(formula, data, atmean = TRUE, robust = FALSE, clustervar1 = NULL,
   est$fit = res$fit
   est$dcvar = rownames(res$mfx[res$mfx$discretechgvar==1,])  
   est$call = match.call() 
-  class(est) = "logitmfx"
+  class(est) = "betamfx"
   est
 }

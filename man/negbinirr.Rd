@@ -1,19 +1,16 @@
-\name{negbinmfx}
-\alias{negbinmfx}
-\alias{print.negbinmfx}
-\title{Marginal effects for a negative binomial regression.}
+\name{negbinirr}
+\alias{negbinirr}
+\alias{print.negbinirr}
+\title{Incidence rate ratios for a negative binomial regression.}
 \description{This function estimates a negative binomial regression model and calculates 
-the corresponding marginal effects.}
+the corresponding incidence rate ratios.}
 \usage{
-negbinmfx(formula, data, atmean = TRUE, robust = FALSE, clustervar1 = NULL, 
+negbinirr(formula, data, robust = FALSE, clustervar1 = NULL, 
           clustervar2 = NULL, start = NULL, control = glm.control())
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{formula}{an object of class ``formula'' (or one that can be coerced to that class).}
   \item{data}{the data frame containing these data. This argument must be used.}
-  \item{atmean}{default marginal effects represent the partial effects for the average observation. 
-  If \code{atmean = FALSE} the function calculates average partial effects.}
   \item{robust}{if \code{TRUE} the function reports White/robust standard errors.}
   \item{clustervar1}{a character value naming the first cluster on which to adjust the standard errors.}
   \item{clustervar2}{a character value naming the second cluster on which to 
@@ -24,15 +21,13 @@ negbinmfx(formula, data, atmean = TRUE, robust = FALSE, clustervar1 = NULL,
 \details{If both \code{robust=TRUE} and \code{!is.null(clustervar1)} the function overrides the \code{robust} 
 command and computes clustered standard errors.}
 \value{
-\item{mfxest}{a coefficient matrix with columns containing the estimates, 
+\item{irr}{a coefficient matrix with columns containing the estimates, 
 associated standard errors, test statistics and p-values.}
 \item{fit}{the fitted \code{\link[MASS]{glm.nb}} object.}
-\item{dcvar}{a character vector containing the variable names where the marginal effect 
-refers to the impact of a discrete change on the outcome. For example, a factor variable.}
 \item{call}{the matched call.}
 }
 
-\seealso{\code{\link{negbinirr}}, \code{\link[MASS]{glm.nb}}}
+\seealso{\code{\link{negbinmfx}}, \code{\link[MASS]{glm.nb}}}
 
 \examples{
 # simulate some data
@@ -43,5 +38,6 @@ y = rnegbin(n, mu = exp(1 + 0.5 * x), theta = 0.5)
 
 data = data.frame(y,x)
 
-negbinmfx(formula=y~x,data=data)
+negbinirr(formula=y~x,data=data)
 }
+

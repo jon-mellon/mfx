@@ -1,6 +1,6 @@
 clusterVCV <-
 function(data, fm, cluster1, cluster2=NULL) {
-    
+  
   # Calculation shared by covariance estimates
   est.fun = estfun(fm)
   inc.obs = complete.cases(data[,all.vars(formula(fm))])
@@ -8,7 +8,7 @@ function(data, fm, cluster1, cluster2=NULL) {
   # Shared data for degrees-of-freedom corrections
   N  = dim(fm$model)[1]
   NROW = NROW(est.fun)
-  K  = fm$rank
+  K  = dim(vcov(fm))[1]
   
   # Calculate the covariance matrix estimate for the first cluster.
   cluster1 = data[inc.obs,cluster1]
