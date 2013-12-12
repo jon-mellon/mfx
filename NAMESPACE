@@ -1,0 +1,3 @@
+#exportPattern("^[[:alpha:]]+")
+export(logitmfx, negbinmfx, poissonmfx, probitmfx, print.logitmfx, print.negbinmfx, print.poissonmfx, print.probitmfx)
+import(stats, sandwich, lmtest, MASS)
