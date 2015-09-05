@@ -1,7 +1,7 @@
 logitmfx <-
 function(formula, data, atmean = TRUE, robust = FALSE, clustervar1 = NULL, 
-                    clustervar2 = NULL, start = NULL, control = list()){
-  res = logitmfxest(formula, data, atmean, robust, clustervar1, clustervar2, start, control)
+                    clustervar2 = NULL, start = NULL, control = list(), weights = NULL){
+  res = logitmfxest(formula, data, atmean, robust, clustervar1, clustervar2, start, control, weights = weights)
   
   est = NULL
   est$mfxest = cbind(dFdx = res$mfx$mfx,
